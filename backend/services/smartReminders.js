@@ -126,15 +126,14 @@ function adjustInterval(baseIntervalDays, device) {
   return Math.max(3, Math.min(adjusted, baseIntervalDays));
 }
 
-// ─── AI REMINDER GENERATION (Optional — needs ANTHROPIC_API_KEY in .env) ─────
+// ─── AI REMINDER GENERATION (Optional — needs GEMINI_API_KEY in .env) ─────
 async function generateAIReminders(device) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return []; // graceful fallback if no key
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return [];
 
   try {
-    // We use the Anthropic Claude API to generate smart reminders
-    // The prompt gives Claude device details and asks for JSON reminders
     const fetch = require('node-fetch');
+
     const prompt = `You are a device maintenance expert. A user has a device with these details:
 - Name: ${device.name}
 - Brand: ${device.brand}
@@ -158,30 +157,35 @@ Respond ONLY with a JSON array (no markdown, no explanation):
   }
 ]`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 800 }
+        })
+      }
+    );
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || '[]';
-    // Strip any accidental markdown fences
+
+    // Gemini returns response in a different structure than Anthropic
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
     const clean = text.replace(/```json|```/g, '').trim();
     return JSON.parse(clean);
+
   } catch (err) {
-    console.warn('AI reminder generation skipped:', err.message);
+    console.warn('Gemini AI reminder generation skipped:', err.message);
     return [];
   }
 }
+
+
+
+
+
 
 // ─── MAIN EXPORT: Generate and Save Auto Reminders ────────────────────────────
 async function generateSmartReminders(device, userId) {

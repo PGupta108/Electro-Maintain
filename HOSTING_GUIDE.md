@@ -229,4 +229,3 @@ Both Vercel and Render auto-detect the push and redeploy automatically. Zero man
 | UptimeRobot | 50 monitors, 5min intervals | ✅ Yes |
 
 **Total cost: ₹0** to host this project publicly forever.
-
