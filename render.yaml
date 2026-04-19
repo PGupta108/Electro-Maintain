@@ -1,0 +1,21 @@
+# render.yaml — Deploy backend to Render.com (free tier)
+services:
+  - type: web
+    name: electromaintain-api
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false   # Set this manually in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false   # Set to your Vercel frontend URL after deploying frontend
